@@ -1,99 +1,60 @@
 import React, { useEffect, useState } from "react";
-import moment from "moment";
 import axios from "axios";
 import TitleCard from "../../components/Cards/TitleCard";
 import { showNotification } from "../common/headerSlice";
 import { useDispatch } from "react-redux";
 
-// Importación de datos
-import polMapping from "../../data/pol.json";
-import poeMapping from "../../data/poe.json";
-import statusMapping from "../../data/status.json";
-import cantEquipoMapping from "../../data/cantEquipo.json";
-import tamanoEquipoMapping from "../../data/tamanoEquipo.json";
-import ejecutivoMapping from "../../data/ejecutivo.json";
-
-function Leads() {
-  const [leads, setLeads] = useState([]);
+function Cotizaciones() {
+  const [cotizaciones, setCotizaciones] = useState([]);
   const [filter, setFilter] = useState("0");
   const [textFilter, setTextFilter] = useState("");
-  const [comments, setComments] = useState({});
   const [isAdmin, setIsAdmin] = useState(true); // Cambiar según lógica de autenticación
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    pdfFile: null,
-    field1: "",
-    field2: "",
+    quo: "",
+    cotizacion: null,
+    cliente: "",
+    estado: 0,
   });
   const dispatch = useDispatch();
 
-  // Obtener leads
-  const fetchLeads = async (filterValue, textValue) => {
+  // Obtener cotizaciones
+  const fetchCotizaciones = async (filterValue, textValue) => {
     try {
       const response = await fetch(
-        `https://api.logisticacastrofallas.com/api/TransInternacional?numFilter=${filterValue}&textFilter=${textValue}`
+        `https://api.logisticacastrofallas.com/api/Cotizacion?numFilter=${filterValue}&textFilter=${textValue}`
       );
       const data = await response.json();
       if (data.isSuccess) {
-        setLeads(data.data.value);
+        setCotizaciones(data.data.value);
       } else {
         dispatch(showNotification({ message: data.message, type: "error" }));
       }
     } catch (error) {
       dispatch(
-        showNotification({ message: "Error fetching leads", type: "error" })
-      );
-    }
-  };
-
-  useEffect(() => {
-    fetchLeads(filter, textFilter);
-  }, [filter, textFilter]);
-
-  // Manejo de filtros
-  const handleFilterChange = (e) => setFilter(e.target.value);
-  const handleTextFilterChange = (e) => setTextFilter(e.target.value);
-
-  // Manejo de comentarios
-  const handleCommentChange = (e, id) => {
-    setComments({ ...comments, [id]: e.target.value });
-  };
-
-  const handleCommentBlur = async (id) => {
-    const comentario = comments[id] || "";
-    try {
-      const response = await axios.patch(
-        "https://api.logisticacastrofallas.com/api/TransInternacional/Agregar",
-        {
-          transInternacionalId: id,
-          comentario,
-        }
-      );
-      if (response.data.isSuccess) {
-        dispatch(
-          showNotification({ message: "Comentario guardado", type: "success" })
-        );
-      } else {
-        dispatch(
-          showNotification({ message: response.data.message, type: "error" })
-        );
-      }
-    } catch (error) {
-      dispatch(
         showNotification({
-          message: "Error al guardar el comentario",
+          message: "Error fetching cotizaciones",
           type: "error",
         })
       );
     }
   };
 
+  useEffect(() => {
+    fetchCotizaciones(filter, textFilter);
+  }, [filter, textFilter]);
+
+  // Manejo de filtros
+  const handleFilterChange = (e) => setFilter(e.target.value);
+  const handleTextFilterChange = (e) => setTextFilter(e.target.value);
+
   // Abrir y cerrar modal
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
+  // Manejo del formulario
   const handleFileChange = (e) => {
-    setFormData({ ...formData, pdfFile: e.target.files[0] });
+    setFormData({ ...formData, cotizacion: e.target.files[0] });
   };
 
   const handleInputChange = (e) => {
@@ -102,21 +63,22 @@ function Leads() {
 
   const handleSubmit = async () => {
     const form = new FormData();
-    form.append("pdfFile", formData.pdfFile);
-    form.append("field1", formData.field1);
-    form.append("field2", formData.field2);
+    form.append("Quo", formData.quo);
+    form.append("Cotizacion", formData.cotizacion);
+    form.append("Cliente", formData.cliente);
+    form.append("Estado", "1");
 
     try {
       const response = await axios.post(
-        "https://api.logisticacastrofallas.com/api/TransInternacional/Agregar",
+        "https://api.logisticacastrofallas.com/api/Cotizacion/Agregar",
         form
       );
       if (response.data.isSuccess) {
         dispatch(
-          showNotification({ message: "Datos agregados", type: "success" })
+          showNotification({ message: "Cotización agregada", type: "success" })
         );
         closeModal();
-        fetchLeads(filter, textFilter); // Refrescar los leads
+        fetchCotizaciones(filter, textFilter); // Refrescar las cotizaciones
       } else {
         dispatch(
           showNotification({ message: response.data.message, type: "error" })
@@ -125,7 +87,7 @@ function Leads() {
     } catch (error) {
       dispatch(
         showNotification({
-          message: "Error al agregar datos",
+          message: "Error al agregar cotización",
           type: "error",
         })
       );
@@ -143,7 +105,7 @@ function Leads() {
           >
             <option value="0">Todos</option>
             <option value="1">Cliente</option>
-            <option value="2">Cotizacion</option>
+            <option value="2">Quo</option>
           </select>
           <input
             type="text"
@@ -165,15 +127,15 @@ function Leads() {
               <tr>
                 <th>QUO</th>
                 <th>Cliente</th>
-                <th>Cotización</th>
+                <th>Estado</th>
               </tr>
             </thead>
             <tbody>
-              {leads.map((l, k) => (
-                <tr key={k}>
-                  <td>{l.title}</td>
-                  <td>{statusMapping[l.new_preestado2] || "N/A"}</td>
-                  <td>{l._customerid_value}</td>
+              {cotizaciones.map((c, index) => (
+                <tr key={index}>
+                  <td>{c.quo}</td>
+                  <td>{c.cliente}</td>
+                  <td>{c.estado}</td>
                 </tr>
               ))}
             </tbody>
@@ -184,21 +146,21 @@ function Leads() {
       {isModalOpen && (
         <div className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg">Agregar Nuevo Registro</h3>
+            <h3 className="font-bold text-lg">Agregar Nueva Cotización</h3>
             <input
               type="text"
-              name="field1"
+              name="quo"
               className="input input-primary w-full my-2"
-              placeholder="Campo 1"
-              value={formData.field1}
+              placeholder="QUO"
+              value={formData.quo}
               onChange={handleInputChange}
             />
             <input
               type="text"
-              name="field2"
+              name="cliente"
               className="input input-primary w-full my-2"
-              placeholder="Campo 2"
-              value={formData.field2}
+              placeholder="Cliente"
+              value={formData.cliente}
               onChange={handleInputChange}
             />
             <input
@@ -222,4 +184,4 @@ function Leads() {
   );
 }
 
-export default Leads;
+export default Cotizaciones;
