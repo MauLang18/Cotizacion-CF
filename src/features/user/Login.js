@@ -43,8 +43,6 @@ function Login() {
         const givenName = decodedToken.given_name;
         const typ = decodedToken.typ;
 
-        console.log(givenName, typ);
-
         if ((givenName === "1" || givenName === "3") && typ.includes("11")) {
           localStorage.setItem("token", token);
           window.location.href = "/app/leads";

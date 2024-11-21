@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import TitleCard from "../../components/Cards/TitleCard";
 import { showNotification } from "../common/headerSlice";
 import { useDispatch } from "react-redux";
@@ -8,7 +9,7 @@ function Cotizaciones() {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [filter, setFilter] = useState("0");
   const [textFilter, setTextFilter] = useState("");
-  const [isAdmin, setIsAdmin] = useState(true); // Cambiar según lógica de autenticación
+  const [isAdmin, setIsAdmin] = useState(false); // Inicializar como falso
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     quo: "",
@@ -17,6 +18,21 @@ function Cotizaciones() {
     estado: 0,
   });
   const dispatch = useDispatch();
+
+  // Decodificar token y establecer permisos
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        const givenName = decodedToken.given_name;
+        setIsAdmin(givenName === "1"); // Mostrar botón solo si givenName es "1"
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        setIsAdmin(false);
+      }
+    }
+  }, []);
 
   // Obtener cotizaciones
   const fetchCotizaciones = async (filterValue, textValue) => {
@@ -65,8 +81,6 @@ function Cotizaciones() {
     const form = new FormData();
     form.append("Quo", formData.quo);
     form.append("Cotizacion", formData.cotizacion);
-    form.append("Cliente", formData.cliente);
-    form.append("Estado", "1");
 
     try {
       const response = await axios.post(
@@ -127,15 +141,15 @@ function Cotizaciones() {
               <tr>
                 <th>QUO</th>
                 <th>Cliente</th>
-                <th>Estado</th>
+                <th>Cotizacion</th>
               </tr>
             </thead>
             <tbody>
               {cotizaciones.map((c, index) => (
                 <tr key={index}>
-                  <td>{c.quo}</td>
-                  <td>{c.cliente}</td>
-                  <td>{c.estado}</td>
+                  <td>{c.quotenumber}</td>
+                  <td>{c._customerid_value}</td>
+                  <td>{c.new_enlacecotizacion}</td>
                 </tr>
               ))}
             </tbody>
@@ -153,14 +167,6 @@ function Cotizaciones() {
               className="input input-primary w-full my-2"
               placeholder="QUO"
               value={formData.quo}
-              onChange={handleInputChange}
-            />
-            <input
-              type="text"
-              name="cliente"
-              className="input input-primary w-full my-2"
-              placeholder="Cliente"
-              value={formData.cliente}
               onChange={handleInputChange}
             />
             <input
