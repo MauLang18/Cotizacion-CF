@@ -11,12 +11,15 @@ function Cotizaciones() {
   const [textFilter, setTextFilter] = useState("");
   const [isAdmin, setIsAdmin] = useState(false); // Inicializar como falso
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     quo: "",
     cotizacion: null,
     cliente: "",
     estado: 0,
   });
+  const [selectedFile, setSelectedFile] = useState(""); // Para visualizar el archivo
+  const [typKeys, setTypKeys] = useState([]); // Almacenar claves del token
   const dispatch = useDispatch();
 
   // Decodificar token y establecer permisos
@@ -27,6 +30,10 @@ function Cotizaciones() {
         const decodedToken = jwtDecode(token);
         const givenName = decodedToken.given_name;
         setIsAdmin(givenName === "1"); // Mostrar botón solo si givenName es "1"
+
+        // Procesar el campo "typ" y convertirlo en un array
+        const typArray = decodedToken.typ?.split(",") || [];
+        setTypKeys(typArray.map((key) => key.trim()));
       } catch (error) {
         console.error("Error decoding token:", error);
         setIsAdmin(false);
@@ -34,7 +41,7 @@ function Cotizaciones() {
     }
   }, []);
 
-  // Obtener cotizaciones
+  // Obtener cotizaciones y filtrar según los permisos
   const fetchCotizaciones = async (filterValue, textValue) => {
     try {
       const response = await fetch(
@@ -42,7 +49,20 @@ function Cotizaciones() {
       );
       const data = await response.json();
       if (data.isSuccess) {
-        setCotizaciones(data.data.value);
+        // Filtrar cotizaciones según los permisos en "typ"
+        const filteredCotizaciones = data.data.value.filter((cotizacion) => {
+          const isServicioAlCliente =
+            typKeys.includes("13") && cotizacion.new_servicioalcliente === true;
+          const isAlmacenFiscal =
+            typKeys.includes("14") && cotizacion.new_almacenfiscal === true;
+          const isConsolidadoraCarga =
+            typKeys.includes("15") &&
+            cotizacion.new_consolidadoradecarga === true;
+
+          return isServicioAlCliente || isAlmacenFiscal || isConsolidadoraCarga;
+        });
+
+        setCotizaciones(filteredCotizaciones);
       } else {
         dispatch(showNotification({ message: data.message, type: "error" }));
       }
@@ -58,15 +78,25 @@ function Cotizaciones() {
 
   useEffect(() => {
     fetchCotizaciones(filter, textFilter);
-  }, [filter, textFilter]);
+  }, [filter, textFilter, typKeys]); // Dependemos también de typKeys
 
   // Manejo de filtros
   const handleFilterChange = (e) => setFilter(e.target.value);
   const handleTextFilterChange = (e) => setTextFilter(e.target.value);
 
-  // Abrir y cerrar modal
+  // Abrir y cerrar modales
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
+  const openViewModal = (fileUrl) => {
+    setSelectedFile(fileUrl);
+    setIsViewModalOpen(true);
+  };
+
+  const closeViewModal = () => {
+    setSelectedFile("");
+    setIsViewModalOpen(false);
+  };
 
   // Manejo del formulario
   const handleFileChange = (e) => {
@@ -141,7 +171,7 @@ function Cotizaciones() {
               <tr>
                 <th>QUO</th>
                 <th>Cliente</th>
-                <th>Cotizacion</th>
+                <th>Cotización</th>
               </tr>
             </thead>
             <tbody>
@@ -149,7 +179,18 @@ function Cotizaciones() {
                 <tr key={index}>
                   <td>{c.quotenumber}</td>
                   <td>{c._customerid_value}</td>
-                  <td>{c.new_enlacecotizacion}</td>
+                  <td>
+                    {c.new_enlacecotizacion ? (
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={() => openViewModal(c.new_enlacecotizacion)}
+                      >
+                        Ver Archivo
+                      </button>
+                    ) : (
+                      "No disponible"
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -181,6 +222,24 @@ function Cotizaciones() {
               </button>
               <button className="btn" onClick={closeModal}>
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isViewModalOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Vista del Archivo</h3>
+            <iframe
+              src={selectedFile}
+              title="Archivo Cotización"
+              className="w-full h-96 border"
+            />
+            <div className="modal-action">
+              <button className="btn" onClick={closeViewModal}>
+                Cerrar
               </button>
             </div>
           </div>

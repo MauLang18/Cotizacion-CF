@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'maulang18/aduanas.cf:latest'
-        CONTAINER_NAME_DEV = 'AduanasCFDev'
+        DOCKER_IMAGE = 'maulang18/cotizacion.cf:latest'
+        CONTAINER_NAME_DEV = 'CotizacionCFDev'
         PORT_DEV = '10114'
         PORT_CONTAINER = '80'
         COMPOSE_NAME = '/home/administrador/docker-compose-castrofallas.yml'
