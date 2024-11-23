@@ -111,6 +111,7 @@ function Cotizaciones() {
     const form = new FormData();
     form.append("Quo", formData.quo);
     form.append("Cotizacion", formData.cotizacion);
+    form.append("Revision", formData.revision);
 
     try {
       const response = await axios.patch(
@@ -208,6 +209,14 @@ function Cotizaciones() {
               className="input input-primary w-full my-2"
               placeholder="QUO"
               value={formData.quo}
+              onChange={handleInputChange}
+            />
+            <input
+              type="text"
+              name="id"
+              className="input input-primary w-full my-2"
+              placeholder="Id.Revision"
+              value={formData.revision}
               onChange={handleInputChange}
             />
             <input
