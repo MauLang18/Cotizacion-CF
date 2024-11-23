@@ -113,7 +113,7 @@ function Cotizaciones() {
     form.append("Cotizacion", formData.cotizacion);
 
     try {
-      const response = await axios.post(
+      const response = await axios.patch(
         "https://api.logisticacastrofallas.com/api/Cotizacion/Agregar",
         form
       );
