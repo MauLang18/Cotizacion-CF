@@ -9,7 +9,7 @@ function Cotizaciones() {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [filter, setFilter] = useState("0");
   const [textFilter, setTextFilter] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false); // Inicializar como falso
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -18,8 +18,8 @@ function Cotizaciones() {
     cliente: "",
     estado: 0,
   });
-  const [selectedFile, setSelectedFile] = useState(""); // Para visualizar el archivo
-  const [typKeys, setTypKeys] = useState([]); // Almacenar claves del token
+  const [selectedFile, setSelectedFile] = useState("");
+  const [typKeys, setTypKeys] = useState([]);
   const dispatch = useDispatch();
 
   // Decodificar token y establecer permisos
@@ -29,9 +29,7 @@ function Cotizaciones() {
       try {
         const decodedToken = jwtDecode(token);
         const givenName = decodedToken.given_name;
-        setIsAdmin(givenName === "1"); // Mostrar botón solo si givenName es "1"
-
-        // Procesar el campo "typ" y convertirlo en un array
+        setIsAdmin(givenName === "1");
         const typArray = decodedToken.typ?.split(",") || [];
         setTypKeys(typArray.map((key) => key.trim()));
       } catch (error) {
@@ -49,7 +47,6 @@ function Cotizaciones() {
       );
       const data = await response.json();
       if (data.isSuccess) {
-        // Filtrar cotizaciones según los permisos en "typ"
         const filteredCotizaciones = data.data.value.filter((cotizacion) => {
           const isServicioAlCliente =
             typKeys.includes("13") && cotizacion.new_servicioalcliente === true;
@@ -78,13 +75,41 @@ function Cotizaciones() {
 
   useEffect(() => {
     fetchCotizaciones(filter, textFilter);
-  }, [filter, textFilter, typKeys]); // Dependemos también de typKeys
+  }, [filter, textFilter, typKeys]);
 
-  // Manejo de filtros
   const handleFilterChange = (e) => setFilter(e.target.value);
   const handleTextFilterChange = (e) => setTextFilter(e.target.value);
 
-  // Abrir y cerrar modales
+  // Manejo del botón de eliminación
+  const handleDelete = async (quoteId) => {
+    try {
+      const response = await axios.patch(
+        `https://api.logisticacastrofallas.com/api/Cotizacion/Eliminar?quoteId=${quoteId}`
+      );
+      if (response.data.isSuccess) {
+        dispatch(
+          showNotification({
+            message: "Cotización eliminada exitosamente",
+            type: "success",
+          })
+        );
+        fetchCotizaciones(filter, textFilter);
+      } else {
+        dispatch(
+          showNotification({ message: response.data.message, type: "error" })
+        );
+      }
+    } catch (error) {
+      dispatch(
+        showNotification({
+          message: "Error al eliminar cotización",
+          type: "error",
+        })
+      );
+    }
+  };
+
+  // Manejo de modales
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
@@ -123,7 +148,7 @@ function Cotizaciones() {
           showNotification({ message: "Cotización agregada", type: "success" })
         );
         closeModal();
-        fetchCotizaciones(filter, textFilter); // Refrescar las cotizaciones
+        fetchCotizaciones(filter, textFilter);
       } else {
         dispatch(
           showNotification({ message: response.data.message, type: "error" })
@@ -173,6 +198,7 @@ function Cotizaciones() {
                 <th>QUO</th>
                 <th>Cliente</th>
                 <th>Cotización</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -191,6 +217,14 @@ function Cotizaciones() {
                     ) : (
                       "No disponible"
                     )}
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-error"
+                      onClick={() => handleDelete(c.quoteid)}
+                    >
+                      Eliminar
+                    </button>
                   </td>
                 </tr>
               ))}
