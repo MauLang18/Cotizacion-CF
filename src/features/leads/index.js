@@ -138,6 +138,8 @@ function Cotizaciones() {
     form.append("Cotizacion", formData.cotizacion);
     form.append("Revision", formData.revision);
 
+    console.log(formData.revision);
+
     try {
       const response = await axios.patch(
         "https://api.logisticacastrofallas.com/api/Cotizacion/Agregar",
@@ -247,7 +249,7 @@ function Cotizaciones() {
             />
             <input
               type="text"
-              name="id"
+              name="revision"
               className="input input-primary w-full my-2"
               placeholder="Id.Revision"
               value={formData.revision}
